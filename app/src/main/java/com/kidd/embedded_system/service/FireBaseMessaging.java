@@ -13,6 +13,7 @@ import com.google.firebase.messaging.RemoteMessage;
 import com.kidd.embedded_system.MainActivity;
 import com.kidd.embedded_system.R;
 
+import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -35,6 +36,8 @@ public class FireBaseMessaging extends FirebaseMessagingService {
             String temp = objectData.getString("tempurature");
             double gas =Double.parseDouble(gasstr);
             double tempurature = Double.parseDouble(temp);
+
+            EventBus.getDefault().post(new TempuratureAndGasChangeEvent(gas,tempurature));
             buildNoti(tempurature,gas);
         }catch (Exception e){
             Log.i(TAG, "error: "+e.getCause());
@@ -43,22 +46,25 @@ public class FireBaseMessaging extends FirebaseMessagingService {
     }
 
     public void buildNoti(double temp,double gas) {
-        NumberFormat formatter = new DecimalFormat("#0.0");
+        NumberFormat formatter = new DecimalFormat("#0.00");
 
-        String contentText = ("Nồng độ khí gas vượt quá mức cho phép ( Nồng độ : "
-                +formatter.format(gas)+" và nhiệt độ : "+formatter.format(temp))+" )";
+        String contentText = ("( Khi gas: "
+                +formatter.format(gas)+" % và nhiệt độ : "+formatter.format(temp))+" ºC)";
 
         String contentTitle = "Cảnh báo nguy hiểm";
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra("gas",gas);
+        intent.putExtra("temp",temp);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this,
                 1,
-                new Intent(this, MainActivity.class),
+                intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.drawable.ic_launcher_background)
-                        .setContentTitle(getString(R.string.app_name)+" - "+contentTitle)
+                        .setSmallIcon(R.drawable.ic_alert)
+                        .setContentTitle(contentTitle)
                         .setContentText(contentText)
                         .setContentIntent(pendingIntent)
                         .setStyle(new NotificationCompat.BigTextStyle()
